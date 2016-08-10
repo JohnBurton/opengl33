@@ -10,6 +10,12 @@ def subdata(node):
                 name = name + subdata(cnode)
         return name
 
+def textnode(node):
+        name = ''
+        for cnode in node.childNodes:
+            if cnode.nodeType == cnode.TEXT_NODE:
+                name = name + cnode.nodeValue
+        return name
 
 
 def process():
@@ -19,12 +25,12 @@ def process():
 
     url = "https://cvs.khronos.org/svn/repos/ogl/trunk/doc/registry/public/api/gl.xml"
     text = request.urlopen(url).read().decode('utf-8')
-
     doc = parseString(text)
 
     for feature in doc.getElementsByTagName('feature'):
         version = feature.getAttribute('name')
 
+# We want everything before version 4
         if version == "GL_VERSION_4_0":
             break
 
@@ -64,8 +70,7 @@ def process():
         proto = cmd.getElementsByTagName('proto')[0]
         params = cmd.getElementsByTagName('param')
         cmdname= subdata(name)
-        protoname= subdata(proto)
-        protoname = protoname.replace(cmdname, "")
+        protoname= textnode(proto)
         pname = []
         for param in params:
             pname.append(subdata(param))
@@ -77,6 +82,16 @@ def process():
 
             c_top.append("%s %s;" % (cmdname.upper() + "PROC", cmdname));
             c_bot.append("    %s=(%s)wglGetProcAddress(\"%s\");" % (cmdname, cmdname.upper() + 'PROC', cmdname));
+
+    enumtag = doc.getElementsByTagName('enums')
+
+    for enumgroup in enumtag:
+        for enum in enumgroup.getElementsByTagName('enum'):
+            name = enum.getAttribute('name')
+            value = enum.getAttribute('value')
+            if name in enumset:
+                print('#define %s %s' % (name, value), file=h_file)
+
 
     print('\n'.join(c_top), file=c_file);
     print('''
@@ -90,8 +105,7 @@ void init_openg33()
 h_file = open("opengl33.h", "wt")
 c_file = open("opengl33.cpp", "wt")
 
-print ('''
-#include <windows.h>
+print (''' #include <windows.h>
 #include <stdint.h>
 
 typedef unsigned int GLenum;
@@ -134,9 +148,7 @@ typedef void ( *GLDEBUGPROCKHR)(GLenum source,GLenum type,GLuint id,GLenum sever
 
         ''', file = h_file);
 
-print ('''
-#include "opengl33.h"
-       ''', file=c_file)
+print ('#include "opengl33.h"', file=c_file)
 process()
 
 

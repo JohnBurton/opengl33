@@ -1,6 +1,4 @@
-
 #include "opengl33.h"
-       
 GLACTIVETEXTUREPROC glActiveTexture;
 GLATTACHSHADERPROC glAttachShader;
 GLBEGINCONDITIONALRENDERPROC glBeginConditionalRender;
